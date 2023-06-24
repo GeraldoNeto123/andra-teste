@@ -19,7 +19,7 @@ interface MyDocumentProps extends DocumentProps {
 
 export default function MyDocument({ emotionStyleTags }: MyDocumentProps) {
   return (
-    <Html lang="en" className={roboto.className}>
+    <Html lang="pt-BR" className={roboto.className}>
       <Head>
         <meta name="theme-color" content={theme.palette.primary.main} />
         <link rel="shortcut icon" href="/favicon.ico" />

@@ -1,0 +1,577 @@
+openapi: 3.0.3
+info:
+  title: Andra ERP API
+  version: 1.0.0
+  description: |
+    Este documento é compatível com o **OpenAPI 3.0.3** conforme suas especificações:
+    - https://spec.openapis.org/oas/v3.0.3    
+
+    Editores para visualizar este arquivo *yaml*:
+    - https://redocly.github.io/redoc/
+    - https://editor.swagger.io/  (ocorre alguns erros, não aceitando *requestBody* no *DELETE*, dentre outros)
+    - Ou no GitLab que, clicando neste arquivo e selecionando o botão para "exibir arquivo renderizado", será mostrado no modelo semelhante ao editor do Swagger
+
+    # Informações Gerais
+
+    ## Troca de informações por Lote
+
+    Conforme poderá ser observado nos exemplos em cada método abaixo as trocas de informações com o back-end para *inclusão*, *alteração* e *exclusão* *(exceto Autenticação)* serão feitas por lista *(lote)* onde cada item será identificado com um ***id*** (*idLista* sequencial ou aleatório sem repetição criado pelo front-end), ou seja, podem ser enviados mais que um registro. O back-end processará cada item desta lista e retornará uma lista separando pelo mesmo ***id*** enviado pelo front-end identificando se ouve sucesso ou erro.
+
+    <a id="filtros"></a>
+
+    ## Filtros
+
+    Os filtros são utilizados na rota para *"pesquisar" (POST)*.
+
+    | Campo | Tipo | Tam. | Obr. | Descrição |
+    | :--- | :---: | :---: | :---: | :--- |
+    | *Campo*[] | array |  | ✔ | Objeto utilizado para representar um conjunto de filtros para um determinado *Campo (string)* |
+    | *Campo*[].operandoTipo | string | 1 | ✔ | Tipo do Operando, onde *0 = Texto ou Inteiro, 1 = Data ou Data e Hora* |
+    | *Campo*[].operandoValor |  | 1 | ✔ | Valor do Operando, cujo *Tipo* pode ser *string*, *inteiro* ou *objeto*, conforme especificado logo abaixo |
+    | *Campo*[].operador | string | 1 | ✔ | Operador, onde seus valores estão especificados logo abaixo |
+
+    O *operandoTipo = 1* deve ser enviado um objeto semelhante a este: *{"dataIni": "2022-02-22 00:00:00", "dataFin": "2025-02-21 23:59:59"}*. A *hora* não é obrigatória, sendo utilizado somente nos *campos* de Data e Hora *(timestamp)*.
+
+    Para filtrar campos *currency* ou *float* utilizar o *operandoTipo = 0* e enviar um *Texto*.
+
+    *operador*:
+    - 0 = Todos
+    - 1 = Iniciando *(mais rápido)*
+    - 2 = Contendo **AND**
+    - 3 = Palavras **OR** *(mais lento)*
+    - 4 = Igual
+    - 5 = Diferente
+    - 6 = Vazio ou nulo
+    - 7 = Não vazio ou nulo
+    - 8 = Igual ou Maior
+    - 9 = Igual ou Menor
+
+    Para fazer um filtro deve enviar no *Body* um JSON, onde o *operandoValor* é a Descrição ***(nmNatOperacao)***, conforme exemplo a seguir:
+
+    ```
+    {
+        "nmNatOperacao": [
+            {
+                "operandoTipo": "0", 
+                "operandoValor": "o", 
+                "operador": "2"
+            }
+        ]
+    }
+    ```
+
+    É permitido aplicar filtros por qualquer coluna escolhida pelo usuário para ser mostrada na Grade de Pesquisa e podem ser adicionados múltiplos campos, permitindo um filtro altamente otimizável, conforme exemplo a seguir:
+
+    ```
+    {
+        "dhCadastrou": [
+            {
+                "operandoTipo": "1",
+                "operandoValor": {
+                    "dataIni": "2023-06-14 00:00:00",
+                    "dataFin": "2025-12-01 23:59:59"
+                },
+                "operador": "1"
+            }
+        ]
+    }
+    ```
+
+    ## Pesquisas
+
+    Pesquisas utilizam os [filtros](#filtros) para retorno dos registros.
+
+    É importante sempre enviar algum filtro no *Body* na requisição para não sobrecarregar o servidor, pois se este não for enviado serão retornados todos os registros muitas vezes sem necessidade, afetando significativamente a performance do sistema.
+
+    <a id="pesquisas"></a>
+  contact:
+    name: Andra Sistemas
+    url: https://www.andrasistemas.com.br/contato-conosco/
+    email: contato@andrasistemas.com.br
+  x-logo:
+    url: 'https://www.andrasistemas.com.br/images/logoazul.png'
+    altText: Andra Sistemas logo
+servers:
+  - url: https://andraerp-backend-sp-dev-vagas.rj.r.appspot.com
+    description: Servidor de desenvolvimento e testes
+tags:
+  - name: Autenticação
+    description: |-
+      Autenticar usuários para acesso ao sistema.
+
+      Utilizar tecnologia *JWT* utilizando a chave secreta **andra3RPW@8aZ** para conversão da senha.
+  - name: Naturezas da Operação
+    description: Cadastro de Naturezas da Operação
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login de Usuários
+      operationId: authLogin
+      description: |-
+        Observar que após o *Login efetuado com sucesso* o *HEADER* do retorno contém a variável ***x-token***. Essa variável deverá ser enviada no *HEADER* de todas as requisições com o back-end.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - usuEMailLogin
+                - usuSenhaLogin
+              properties:
+                usuEMailLogin:
+                  type: string
+                  format: password
+                  description: E-mail de Login
+                  maxLength: 100
+                usuSenhaLogin:
+                  type: string
+                  format: password
+                  description: |-
+                    Senha de Login *encoded JWT*
+
+                    Para codificar pelo JWT utilizar o seguinte objeto **{ usuSenhaLogin: password }**, onde *password* é a senha não codificada digitada pelo usuário no campo *"Senha de Login"*.
+                  maxLength: 255
+              example:
+                usuEMailLogin: testevagas@andrasistemas.com.br
+                usuSenhaLogin: eeeExemploDeSenhaConveridaComChaveSecretaaaa
+      responses:
+        '200':
+          $ref: "#/components/responses/authLogin"
+  /natoperacao/incluir:
+    post:
+      tags:
+        - Naturezas da Operação
+      summary: Cadastrar Natureza da Operação
+      operationId: Cadastrar Natureza da Operação
+      description: |-
+        Cadastrar Natureza da Operação
+      parameters:
+        - $ref: "#/components/parameters/x-token"
+      requestBody:
+        $ref: '#/components/requestBodies/NatOperacaoIncluir'
+      responses:
+        '200':
+          $ref: "#/components/responses/200ComId"
+  /natoperacao/alterar:
+    put:
+      tags:
+        - Naturezas da Operação
+      summary: Alterar Natureza da Operação
+      operationId: Alterar Natureza da Operação
+      description: |-
+        Alterar Natureza da Operação
+      parameters:
+        - $ref: "#/components/parameters/x-token"
+      requestBody:
+        $ref: '#/components/requestBodies/NatOperacaoAlterar'
+      responses:
+        '200':
+          $ref: "#/components/responses/200ComId"
+  /natoperacao/excluir:
+    delete:
+      tags:
+        - Naturezas da Operação
+      summary: Excluir Natureza da Operação
+      operationId: natoperacaoExcluir
+      description: Exclusão.
+      parameters:
+        - $ref: "#/components/parameters/x-token"
+      requestBody:
+        $ref: '#/components/requestBodies/Exclusao'
+      responses:
+        '200':
+          $ref: "#/components/responses/200ComId"
+  /natoperacao/pesquisar:
+    post:
+      tags:
+        - Naturezas da Operação
+      summary: Listar Natureza da Operação
+      operationId: Listar Natureza da Operação
+      description: |-
+        Mais detalhes em [pesquisa](#pesquisas).
+      parameters:
+        - $ref: "#/components/parameters/x-token"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nmNatOperacao:
+                  allOf:
+                    - $ref: '#/components/schemas/FiltroTextoOuInteiro'
+              example:
+                nmNatOperacao:
+                  - operandoTipo: '0'
+                    operandoValor: ven
+                    operador: '2'
+      responses:
+        '200':
+          description: OK
+          headers:
+            x-token:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                  mensagem:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        mensagem:
+                          type: string
+                  retorno:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                        nmNatOperacao:
+                          type: string
+                        tpEstoque:
+                          type: string
+                        alias_tpEstoque:
+                          type: string
+                        tpFinanceiro:
+                          type: string
+                        alias_tpFinanceiro:
+                          type: string
+                        dhCadastrou:
+                          type: string
+                        idUsuarioCadastrou:
+                          type: number
+                        alias_usuarioCadastrou:
+                          nullable: true
+                          type: string
+                        dhAlterou:
+                          nullable: true
+                          type: string
+                        idUsuarioAlterou:
+                          nullable: true
+                          type: number
+                        alias_usuarioAlterou:
+                          nullable: true
+                          type: string
+                        dhExcluiu:
+                          nullable: true
+                        idUsuarioExcluiu:
+                          nullable: true
+                        alias_usuarioExcluiu:
+                          nullable: true
+                        alias_excluido:
+                          type: string
+                example:
+                  status: 200
+                  mensagem:
+                    - mensagem: Pesquisa realizada com sucesso.
+                  retorno:
+                    - id: 54
+                      nmNatOperacao: Vendas
+                      tpEstoque: '1'
+                      alias_tpEstoque: Saída
+                      tpFinanceiro: '1'
+                      alias_tpFinanceiro: Receber
+                      dhCadastrou: '2020-12-28T11:10:32.000Z'
+                      idUsuarioCadastrou: 0
+                      alias_usuarioCadastrou: null
+                      dhAlterou: null
+                      idUsuarioAlterou: null
+                      alias_usuarioAlterou: null
+                      dhExcluiu: null
+                      idUsuarioExcluiu: null
+                      alias_usuarioExcluiu: null
+                      alias_excluido: Não
+                    - id: 94
+                      nmNatOperacao: Vendas (Varejo)
+                      tpEstoque: '1'
+                      alias_tpEstoque: Saída
+                      tpFinanceiro: '1'
+                      alias_tpFinanceiro: Receber
+                      dhCadastrou: '2022-03-03T19:43:08.000Z'
+                      idUsuarioCadastrou: 52
+                      alias_usuarioCadastrou: Danny SoaAn
+                      dhAlterou: '2022-03-03T19:45:03.000Z'
+                      idUsuarioAlterou: 52
+                      alias_usuarioAlterou: Danny SoaAn
+                      dhExcluiu: null
+                      idUsuarioExcluiu: null
+                      alias_usuarioExcluiu: null
+                      alias_excluido: Não
+components:
+  requestBodies:
+    Exclusao:
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - lista
+            properties:
+              lista:
+                type: array
+                description: Objeto utilizado para representar um conjunto de *"Cadastros"*
+                items:
+                  type: object
+                  required:
+                    - idLista
+                    - id
+                  properties:
+                    idLista:
+                      description: Número sequencial utilizado para identificar cada elemento da lista
+                      allOf:
+                        - $ref: '#/components/schemas/Id'
+                    id:
+                      description: Id do *"Cadastro"*
+                      allOf:
+                        - $ref: '#/components/schemas/Id'
+            example:
+              lista:
+                - idLista: 1
+                  id: 363
+
+    NatOperacaoIncluir:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ListaNatOperacaoIncluir'
+    NatOperacaoAlterar:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ListaNatOperacaoAlterar'
+
+  schemas:
+    x-token:
+      type: string
+      description: Token de acesso ao sistema
+    Id:
+      type: integer
+      format: int32
+      maximum: 10      # readOnly: true
+    ApiRetorno:
+      type: object
+      description: Mensagens retornadas
+      properties:
+        status:
+          type: integer
+          format: int32
+          description: Status retornado
+        mensagem:
+          type: array
+          items:
+            type: object
+            properties:
+              mensagem:
+                type: string
+                description: Mensagem retornada
+
+    FiltroTextoOuInteiro:
+      type: array
+      # description: Objeto utilizado para representar um conjunto de filtros para um determinado *Campo (string)*
+      items:
+        type: object
+        required:
+          - operandoTipo
+          - operandoValor
+          - operador
+        properties:
+          operandoTipo:
+            type: string
+            description: Tipo do Operando, onde *0 = Texto ou Inteiro, 1 = Data ou Data e Hora*
+            maxLength: 1
+          operandoValor:
+            type: string
+            format: binary
+            description: Valor do Operando, cujo *Tipo* pode ser *string*, *inteiro* ou *objeto*, conforme especificado em [filtros](#filtros)
+          operador:
+            type: string
+            description: Operador, onde seus valores estão especificados em [filtros](#filtros)
+            maxLength: 1
+    FiltroDataOuDataHora:
+      type: array
+      # description: Objeto utilizado para representar um conjunto de filtros para um determinado *Campo (string)*
+      items:
+        type: object
+        required:
+          - operandoTipo
+          - operandoValor
+          - operador
+        properties:
+          operandoTipo:
+            type: string
+            description: Tipo do Operando, onde *0 = Texto ou Inteiro, 1 = Data ou Data e Hora*
+            maxLength: 1
+          operandoValor:
+            type: object
+            description: '*Objeto* de Data ou Data e Hora conforme especificado em [filtros](#filtros)'
+            required:
+              - dataIni
+              - dataFin
+            properties:
+              dataIni:
+                type: string
+                format: date-time
+                description: Data *(Ex. 2022-02-22)* ou Data e Hora *(Ex. 2022-02-22 23:59:59)*
+              dataFin:
+                type: string
+                format: date-time
+                description: Data *(Ex. 2022-02-22)* ou Data e Hora *(Ex. 2022-02-22 23:59:59)*
+          operador:
+            type: string
+            description: Operador, onde seus valores estão especificados em [filtros](#filtros)
+            maxLength: 1
+
+    ListaNatOperacaoIncluir:
+      type: object
+      required:
+        - lista
+      properties:
+        lista:
+          type: array
+          items:
+            allOf:  
+              - $ref: '#/components/schemas/NatOperacao'
+      example:
+        lista:
+          - idLista: 1
+            nmNatOperacao: Orçamento
+            tpEstoque: '0'
+            tpFinanceiro: '0'
+    ListaNatOperacaoAlterar:
+      type: object
+      required:
+        - lista
+      properties:
+        lista:
+          type: array
+          items:
+            required:
+              - id
+            allOf:  
+              - $ref: '#/components/schemas/NatOperacao'
+              - properties:
+                  id:
+                    description: Id da Natureza da Operação
+                    allOf:
+                      - $ref: '#/components/schemas/Id'
+      example:
+        lista:
+          - idLista: 1
+            nmNatOperacao: Orçamento
+            tpEstoque: '0'
+            tpFinanceiro: '0'
+
+    NatOperacao:
+      required:
+        - idLista
+        - nmNatOperacao
+      properties:
+        idLista:
+          description: Número sequencial utilizado para identificar cada elemento da lista
+          allOf:
+            - $ref: '#/components/schemas/Id'
+        nmNatOperacao:
+          type: string
+          description: Descrição da Natureza da Operação
+          maxLength: 70
+        tpEstoque:
+          type: string
+          description: Tipo de operação com estoque, onde *0 = [Nenhum], 1 = Saída, 2 = Entrada*
+          maxLength: 1
+        tpFinanceiro:
+          type: string
+          description: Tipo de operação com financeiro, onde *0 = [Nenhum], 1 = Receber, 2 = Pagar*
+          maxLength: 1
+
+  responses:
+    200:
+      description: OK
+      headers:
+        x-token:
+          $ref: "#/components/headers/x-token"        
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiRetorno"        
+    '200ComId':
+      description: OK
+      headers:
+        x-token:
+          $ref: "#/components/headers/x-token"        
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiRetorno"        
+              - type: object
+                properties:
+                  retorno:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: Id retornado do Cadastro, Alteração ou Exclusão
+                          allOf:
+                            - $ref: '#/components/schemas/Id'
+                    example:
+                      - idLista: 1
+                        status: 200
+                        mensagem:
+                          - mensagem: Cadastrado, Alterado ou Excluido com sucesso.
+                        retorno:
+                          - id: 363
+    'authLogin':
+      description: OK
+      headers:
+        x-token:
+          $ref: "#/components/headers/x-token"        
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiRetorno"        
+              - type: object
+                properties:
+                  retorno:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        detalhesUsuario:
+                          type: array
+                          description: Detalhes do usuário logado
+                          items:
+                            type: object
+                            properties: {}
+          examples:
+            response:
+              value:
+                status: 200
+                mensagem:
+                  - mensagem: Login efetuado com sucesso.
+                retorno:
+                  - detalhesUsuario:
+                      - {}
+
+  parameters:
+    x-token:
+      name: x-token
+      in: header
+      required: true
+      # example: "eyZamJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTIsInVzdUVNYWlsTG9naW4iOiJkMUBkLmNvbSIsImlhdCI6MTY0NTAzMDM5MywiZXhwIjoxNjQ1ODk0MzkzfQ.edFstq720qApbO3ScWUnd2fM8hlI6gt2md0mcKJP"
+      schema:
+        $ref: "#/components/schemas/x-token"        
+  headers:
+    x-token:
+      schema:
+        $ref: "#/components/schemas/x-token"        
