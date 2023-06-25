@@ -32,7 +32,7 @@ export default function Login() {
     const loginSuccess = await signIn({ email, password });
 
     if (loginSuccess) {
-      return router.push('/dashboard');
+      return router.push('/operacoes');
     }
     
     setLoading(false);

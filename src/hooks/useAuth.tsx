@@ -54,7 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setCookie(undefined, 'andra-sistemas.token', token, {
                 maxAge: 60 * 60 * 1, // 1 hour
             })
-            api.defaults.headers['Authorization'] = `Bearer ${token}`;
+            api.defaults.headers['x-token'] = `${token}`;
 
             const loggedUser = { id, nmRazao, email };
 

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { parseCookies } from "nookies";
+import Router from "next/router";
 
 export function getAPIClient(ctx?: any) {
   const { "andra-sistemas.token": token } = parseCookies(ctx);
@@ -9,14 +10,34 @@ export function getAPIClient(ctx?: any) {
   });
 
   api.interceptors.request.use((config) => {
-    console.log(config);
+    config.headers["Content-type"] = `application/json`;
 
     return config;
   });
 
   if (token) {
-    api.defaults.headers["Authorization"] = `Bearer ${token}`;
+    api.defaults.headers["x-token"] = `${token}`;
   }
+
+  api.interceptors.response.use(
+    async (response) => {
+      return response;
+    },
+    async (error) => {
+      if (error.response.status === 401 || error.response.status === 403) {
+        if (ctx) {
+          ctx.res.writeHead(302, {
+            Location: "/",
+          });
+          ctx.res.end();
+        }
+
+        const requestConfig = error.config;
+        return axios(requestConfig);
+      }
+      return Promise.reject(error);
+    }
+  );
 
   return api;
 }
