@@ -10,8 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import Sweetalert2 from 'sweetalert2';
 import { api } from "@/services/api";
 import OperacoesSearchByDescricao from "@/components/OperacoesSearchByDescricao";
-import { useRouter } from "next/router";
-
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 
 export interface OperacaoData {
     id: number;
@@ -37,7 +36,7 @@ interface DashboardProps {
 }
 
 export default function Operacoes({ operacoesData }: DashboardProps) {
-    const router = useRouter();
+    const [selectedRows, setSelectedRows] = useState<number[]>([]);
     const [operacoes, setOperacoes] = useState<OperacaoData[]>(() => {
         if (typeof operacoesData === 'undefined') {
             return []
@@ -45,7 +44,7 @@ export default function Operacoes({ operacoesData }: DashboardProps) {
         return operacoesData
     });
 
-    const handleRemoveOPeracao = useCallback(async (id: number) => {
+    const handleRemoveOPeracao = useCallback(async (ids: number[]) => {
         try {
             const { isConfirmed } = await Sweetalert2.fire({
                 title: 'Deseja realmente excluir?',
@@ -61,16 +60,15 @@ export default function Operacoes({ operacoesData }: DashboardProps) {
             if (isConfirmed) {
                 await api.delete('/natoperacao/excluir', {
                     data: {
-                        lista: [
-                            {
-                                idLista: 1,
-                                id
-                            }
-                        ]
+                        lista: ids.map((id) => ({
+                            idLista: 1,
+                            id
+                        }))
+
                     }
                 });
 
-                setOperacoes(state => state.filter((operacao) => operacao.id !== id))
+                setOperacoes(state => state.filter((operacao) => !ids.includes(operacao.id)))
             }
         } catch (error) {
             Sweetalert2.fire({
@@ -93,12 +91,19 @@ export default function Operacoes({ operacoesData }: DashboardProps) {
                     }
                 ]
             });
-
-            setOperacoes(response.data.retorno);
+            if (response.data.status === 200) {
+                setOperacoes(response.data.retorno);
+            } else {
+                setOperacoes([]);
+            }
         } catch (error) {
 
         }
     }, [])
+
+    const handleRow = (ids: any) => {
+        setSelectedRows(ids);
+    };
 
     useEffect(() => {
         if (typeof operacoesData === 'undefined') {
@@ -113,10 +118,24 @@ export default function Operacoes({ operacoesData }: DashboardProps) {
             <main style={{ padding: 16 }}>
                 <Typography variant="h3">Tela de pesquisa</Typography>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Link href='/operacoes/new'>
-                        <Button variant='contained' startIcon={<AddCircleOutlineIcon />}>Incluir</Button>
-                    </Link>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                    <div>
+
+                        <Link href='/operacoes/new'>
+                            <Button variant='contained' startIcon={<AddCircleOutlineIcon />}>Incluir</Button>
+                        </Link>
+                        {selectedRows.length > 0 && (
+                            <Button
+                                onClick={() => handleRemoveOPeracao(selectedRows)}
+                                variant='contained'
+                                color="error"
+                                startIcon={<HighlightOffIcon />}
+                                sx={{ marginLeft: 1 }}
+                            >
+                                Excluir {selectedRows.length} Itens
+                            </Button>
+                        )}
+                    </div>
 
                     <OperacoesSearchByDescricao handleSearchOPeracao={handleSearchOPeracao} />
                 </Box>
@@ -124,6 +143,7 @@ export default function Operacoes({ operacoesData }: DashboardProps) {
                 <OperacoesTable
                     operacoes={operacoes}
                     handleRemoveOPeracao={handleRemoveOPeracao}
+                    handleRow={handleRow}
                 />
             </main>
 
@@ -138,19 +158,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const descricao = String(query.descricao || '');
 
-    const response = await apiClient.post('/natoperacao/pesquisar', {
-        nmNatOperacao: [
-            {
-                operandoTipo: "0",
-                operandoValor: descricao,
-                operador: "2"
-            }
-        ]
-    });
+    let operacoesData = [];
+    try {
+        const response = await apiClient.post('/natoperacao/pesquisar', {
+            nmNatOperacao: [
+                {
+                    operandoTipo: "0",
+                    operandoValor: descricao,
+                    operador: "2"
+                }
+            ]
+        });
+        if (response.data.status === 200)
+            operacoesData = response.data.retorno;
+    } catch (error) {
+        console.log(error)
+    }
 
     return {
         props: {
-            operacoesData: response.data.retorno
+            operacoesData
         }
     }
 }
