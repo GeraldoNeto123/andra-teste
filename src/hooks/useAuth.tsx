@@ -1,5 +1,5 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
-import { setCookie, parseCookies } from 'nookies'
+import { setCookie, parseCookies, destroyCookie } from 'nookies'
 import { signInRequest } from "@/services/auth";
 import { api } from "@/services/api";
 import Router from 'next/router'
@@ -18,7 +18,8 @@ type SignInData = {
 type AuthContextType = {
     isAuthenticated: boolean;
     user: User;
-    signIn: (data: SignInData) => Promise<boolean>
+    signIn: (data: SignInData) => Promise<boolean>;
+    signOut: () => void;
 }
 
 interface AuthProviderProps {
@@ -68,8 +69,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     }
 
+    const signOut = () => {
+        destroyCookie(null, 'andra-sistemas.token');
+        localStorage.removeItem('@andra-sistemas:user');
+        api.defaults.headers['x-token'] = ``;
+        Router.push('/');
+    }
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated, signIn }}>
+        <AuthContext.Provider value={{ user, isAuthenticated, signIn, signOut }}>
             {children}
         </AuthContext.Provider>
     )

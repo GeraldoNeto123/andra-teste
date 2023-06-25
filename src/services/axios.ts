@@ -25,11 +25,14 @@ export function getAPIClient(ctx?: any) {
     },
     async (error) => {
       if (error.response.status === 401 || error.response.status === 403) {
+        api.defaults.headers["x-token"] = '';
         if (ctx) {
           ctx.res.writeHead(302, {
             Location: "/",
           });
           ctx.res.end();
+        } else if (Router) {
+          Router.push("/");
         }
 
         const requestConfig = error.config;
