@@ -9,19 +9,23 @@ import Document, {
 } from 'next/document';
 import createEmotionServer from '@emotion/server/create-instance';
 import { AppType } from 'next/app';
-import theme, { roboto } from '@/styles/theme';
+import lightTheme, { roboto } from '@/styles/lightTheme';
+import darkTheme from '@/styles/darkTheme';
 import createEmotionCache from '@/utils/createEmotionCache';
 import { MyAppProps } from './_app';
+import { useTheme } from '@/hooks/useTheme';
 
 interface MyDocumentProps extends DocumentProps {
   emotionStyleTags: JSX.Element[];
 }
 
 export default function MyDocument({ emotionStyleTags }: MyDocumentProps) {
+  const { theme } = useTheme();
+
   return (
     <Html lang="pt-BR" className={roboto.className}>
       <Head>
-        <meta name="theme-color" content={theme.palette.primary.main} />
+        <meta name="theme-color" content={theme === 'dark' ? darkTheme.palette.primary.main : lightTheme.palette.primary.main} />
         <link rel="shortcut icon" href="/favicon.ico" />
         <meta name="emotion-insertion-point" content="" />
         {emotionStyleTags}

@@ -1,7 +1,8 @@
 import { styled } from "@mui/material";
+import { grey } from '@mui/material/colors';
 
 export const FooterContainer = styled("footer")`
-  background-color: #eee;
+  background-color: ${grey[200]};
   position: absolute;
   bottom: 0;
   width: 100%;

@@ -1,11 +1,18 @@
-import { DarkMode, Logout } from '@mui/icons-material';
+import {
+    LightMode as LightModeIcon,
+    DarkMode as DarkModeIcon,
+    Logout as LogoutIcon
+} from '@mui/icons-material';
 import { IconButton, Toolbar } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import LogoBranco from '@/assets/logobranco.png'
 import Image from 'next/image';
+import { useTheme } from '@/hooks/useTheme';
 
 export default function Navbar() {
+    const { theme, handleTheme } = useTheme();
+
     return (
         <Box sx={{ flexGrow: 1 }}>
             <AppBar position='sticky' sx={{ padding: 1 }}>
@@ -23,11 +30,11 @@ export default function Navbar() {
                         />
                     </Box>
                     <Box>
-                        <IconButton color='inherit' onClick={() => { }}>
-                            <DarkMode fontSize='large' />
+                        <IconButton color='inherit' onClick={() => handleTheme(theme === 'dark' ? 'light' : 'dark')}>
+                            {theme === 'dark' ? <DarkModeIcon /> : <LightModeIcon />}
                         </IconButton>
                         <IconButton color='inherit' onClick={() => { }}>
-                            <Logout fontSize='large' />
+                            <LogoutIcon fontSize='large' />
                         </IconButton>
                     </Box>
                 </Toolbar>
