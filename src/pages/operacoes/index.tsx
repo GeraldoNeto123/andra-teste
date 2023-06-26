@@ -159,21 +159,21 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const descricao = String(query.descricao || '');
 
     let operacoesData = [];
-    try {
-        const response = await apiClient.post('/natoperacao/pesquisar', {
-            nmNatOperacao: [
-                {
-                    operandoTipo: "0",
-                    operandoValor: descricao,
-                    operador: "2"
-                }
-            ]
-        });
-        if (response.data.status === 200)
-            operacoesData = response.data.retorno;
-    } catch (error) {
-        console.log(error)
-    }
+    // try {
+    //     const response = await apiClient.post('/natoperacao/pesquisar', {
+    //         nmNatOperacao: [
+    //             {
+    //                 operandoTipo: "0",
+    //                 operandoValor: descricao,
+    //                 operador: "2"
+    //             }
+    //         ]
+    //     });
+    //     if (response.data.status === 200)
+    //         operacoesData = response.data.retorno;
+    // } catch (error) {
+    //     console.log(error)
+    // }
 
     return {
         props: {
