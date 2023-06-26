@@ -34,7 +34,7 @@ export default function Login() {
     if (loginSuccess) {
       return router.push('/operacoes');
     }
-    
+
     setLoading(false);
     setLoginFailed(true);
   }
@@ -97,7 +97,7 @@ export default function Login() {
                 InputProps={{
                   startAdornment: <InputAdornment position="start"><EmailIcon /></InputAdornment>,
                 }}
-                helperText="E-mail e/ou senha inválidos."
+                helperText={loginFailed ? "E-mail e/ou senha inválidos." : ''}
                 required
               />
               <TextField
@@ -108,7 +108,7 @@ export default function Login() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                helperText="E-mail e/ou senha inválidos."
+                helperText={loginFailed ? "E-mail e/ou senha inválidos." : ''}
                 InputProps={{
                   startAdornment: <InputAdornment position="start"><LockIcon /></InputAdornment>,
                   endAdornment: <InputAdornment position="end">
